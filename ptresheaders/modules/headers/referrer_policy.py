@@ -17,11 +17,11 @@ class ReferrerPolicy(HeaderTestBase):
         header_values_list: list = header_value.split(", ")
         ptprint("Values:", "TEXT", not self.args.json, indent=4)
         for value in header_values_list:
-            bullet = self._get_bullet_type(value) if len(header_values_list) == 1 else "VULN"
+            bullet = self._get_bullet_type(value)
             ptprint(value, bullet_type=bullet, condition=not self.args.json, indent=8)
 
     def _get_bullet_type(self, value):
         for possible_value in self.possible_values:
             if possible_value[0] == value:
-                return possible_value[1] # return vuln-code
-        return "VULN" # else VULN (invalid code)
+                return possible_value[1]
+        return "VULN"
