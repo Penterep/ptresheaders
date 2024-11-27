@@ -77,8 +77,8 @@ class StrictTransportSecurity(HeaderTestBase):
 
         This method checks the value of `max-age` and categorizes it into one of the following
         bullet types:
-        - "VULN" if the value is too small (<= 15768000 seconds)
-        - "WARNING" if the value is between 15768001 and 31536000 seconds
+        - "VULN" if the value is too small (< 2592000 seconds)
+        - "WARNING" if the value is between 2592000 and 31536000 seconds
         - "NOTVULN" if the value is greater than or equal to 31536001 seconds
 
         :param value: The `max-age` value to be checked.
@@ -87,7 +87,7 @@ class StrictTransportSecurity(HeaderTestBase):
         :rtype: tuple
         """
 
-        if value <= 15768000:
+        if value < 2592000:
             return "VULN", "too small value"
         elif value < 31536000:
             return "WARNING", "warning value"
