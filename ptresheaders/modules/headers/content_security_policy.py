@@ -71,7 +71,7 @@ class ContentSecurityPolicy(HeaderTestBase):
         missing_all_directives += self.get_others_directives(csp_dict)
 
         if directive_type == "missing":
-            ptprint("Missing directives:", "VULN", not self.args.json, colortext=False, indent=4)
+            ptprint("Missing directives:", "", not self.args.json, indent=4)
             for key in missing_all_directives:
                 self.ptjsonlib.add_vulnerability(f"MISSING-DIRECTIVE-{key}")
                 ptprint(key, "VULN", not self.args.json, indent=8)
@@ -79,8 +79,8 @@ class ContentSecurityPolicy(HeaderTestBase):
         if directive_type == "default-src":
             if not "default-src" in csp_dict:
                 return
-            ptprint(f"Policy definition:", "TITLE", not self.args.json, newline_above=True, indent=4)
-            ptprint('default-src', "", not self.args.json, indent=10)
+            ptprint(f"Policy definition:", "", not self.args.json, newline_above=True, indent=4)
+            ptprint('default-src', "", not self.args.json, indent=8)
             for key in missing_fetch_directives:
                 ptprint(key, "", not self.args.json, indent=12)
             self._print_values("", csp_dict.get("default-src", []))
@@ -106,7 +106,7 @@ class ContentSecurityPolicy(HeaderTestBase):
                     csp_dict.pop(key)
 
             if csp_dict.keys():
-                ptprint("Non-standard directives:", "WARNING", not self.args.json, newline_above=True, indent=4)
+                ptprint("Non-standard directives:", "", not self.args.json, newline_above=True, indent=4)
                 for key, value_list in csp_dict.items():
                     self._print_values(key, value_list)
 

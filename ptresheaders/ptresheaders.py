@@ -32,7 +32,8 @@ from ptlibs import ptjsonlib, ptprinthelper, ptmisclib, ptnethelper
 
 from ptlibs.ptprinthelper import ptprint, out_if
 
-from modules.headers import content_security_policy, strict_transport_security, x_frame_options, x_content_type_options, referrer_policy, content_type, permissions_policy, _leaking_headers
+from modules.headers import content_security_policy, strict_transport_security, x_frame_options, x_content_type_options, referrer_policy, content_type, permissions_policy
+from modules.leaks import LeaksFinder
 
 class PtResHeaders:
     """Script connects to target <url> and analyses response headers"""
@@ -48,7 +49,8 @@ class PtResHeaders:
     }
 
     DEPRECATED_HEADERS = [
-        "X-Frame-Options"
+        "X-Frame-Options",
+        "X-XSS-Protection"
     ]
 
     def __init__(self, args):
@@ -73,7 +75,8 @@ class PtResHeaders:
         self.print_response_headers(headers)
 
         # Print info leaking headers
-        _leaking_headers.find_interesting_headers(headers)
+        LeaksFinder(args, self.ptjsonlib).find_technology_headers(headers)
+        LeaksFinder(args, self.ptjsonlib).find_leaking_domains(headers)
 
         # Test observed headers for proper configuraton
         for observed_header, handler_function in self.OBSERVED_HEADERS_MODULES.items():
@@ -87,12 +90,16 @@ class PtResHeaders:
 
         ptprint(" ", condition= not args.json)
         if found_deprecated_headers:
+            ptprint(f"Deprecated security headers:", bullet_type="WARNING", condition=not args.json)
             for header in found_deprecated_headers:
-                ptprint(f"Deprecated security header: {header}", bullet_type="WARNING", condition=not args.json)
+                ptprint(f"{header}", bullet_type="TEXT", condition=not args.json, indent=8)
                 self.ptjsonlib.add_vulnerability(f"WARNIG-DEPRECATED-HEADER-{header}")
+            ptprint(f" ", bullet_type="TEXT", condition=not args.json)
+
         if found_missing_headers:
+            ptprint(f"Missing security headers:", bullet_type="ERROR", condition=not args.json)
             for header in found_missing_headers:
-                ptprint(f"Missing security header: {header}", bullet_type="ERROR", condition=not args.json)
+                ptprint(f"{header}", bullet_type="TEXT", condition=not args.json, indent=8)
                 self.ptjsonlib.add_vulnerability(f"MISSING-HEADER-{header}")
 
         self.ptjsonlib.set_status("finished")
