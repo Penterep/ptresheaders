@@ -32,7 +32,8 @@ from ptlibs import ptjsonlib, ptprinthelper, ptmisclib, ptnethelper
 
 from ptlibs.ptprinthelper import ptprint, out_if
 
-from modules.headers import content_security_policy, strict_transport_security, x_frame_options, x_content_type_options, referrer_policy, content_type, permissions_policy
+from modules.headers import content_security_policy, strict_transport_security, x_frame_options, x_content_type_options, referrer_policy, content_type, permissions_policy, reporting_endpoints
+from modules.cors import CrossOriginResourceSharing
 from modules.leaks import LeaksFinder
 
 class PtResHeaders:
@@ -46,6 +47,7 @@ class PtResHeaders:
         "Strict-Transport-Security": strict_transport_security.StrictTransportSecurity,
         "Referrer-Policy": referrer_policy.ReferrerPolicy,
         "Content-Security-Policy": content_security_policy.ContentSecurityPolicy,
+        "Reporting-Endpoints": reporting_endpoints.ReportingEndpoints,
     }
 
     DEPRECATED_HEADERS = [
@@ -78,6 +80,10 @@ class PtResHeaders:
         LeaksFinder(args, self.ptjsonlib).find_technology_headers(headers)
         LeaksFinder(args, self.ptjsonlib).find_leaking_domains(headers)
 
+        _cors_headers = [h.lower() for h in ["Cross-Origin-Resource-Policy", "Cross-Origin-Opener-Policy", "Cross-Origin-Embedder-Policy", "Access-Control-Max-Age", "Access-Control-Expose-Headers", "Access-Control-Allow-Credentials", "Access-Control-Allow-Headers", "Access-Control-Allow-Methods", "Access-Control-Allow-Origin"]]
+        if any(key.startswith("cross-origin") or key in _cors_headers for key in (header.lower() for header in headers.keys())):
+            CrossOriginResourceSharing().test(args=args, headers=headers)
+
         # Test observed headers for proper configuraton
         for observed_header, handler_function in self.OBSERVED_HEADERS_MODULES.items():
             if observed_header.lower() in (header.lower() for header in headers.keys()):
@@ -88,7 +94,7 @@ class PtResHeaders:
             else:
                 found_missing_headers.append(observed_header)
 
-        ptprint(" ", condition= not args.json)
+        ptprint(" ", condition=not args.json)
         if found_deprecated_headers:
             ptprint(f"Deprecated security headers:", bullet_type="WARNING", condition=not args.json)
             for header in found_deprecated_headers:
@@ -171,6 +177,7 @@ def parse_args():
 
     args = parser.parse_args()
     args.headers = ptnethelper.get_request_headers(args)
+    args.headers.update({"Referer": "https://www.example.com/", "Origin": "https://www.example.com/"})
     args.proxy = {"http": args.proxy, "https": args.proxy}
 
     ptprinthelper.print_banner(SCRIPTNAME, __version__, args.json)
