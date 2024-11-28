@@ -64,10 +64,9 @@ class ContentSecurityPolicy(HeaderTestBase):
             - `"other"`:
                 Prints non-fetch directives found in the policy (e.g., `sandbox`, `upgrade-insecure-requests`).
         """
-        missing_fetch_directives = [key for d in self.get_missing_fetch_directives(csp_dict) for key in d.keys()]
+        missing_fetch_directives: list = [key for d in self.get_missing_fetch_directives(csp_dict) for key in d.keys()]
         missing_all_directives: list = []
-        if not "default-src" in csp_dict:
-            missing_all_directives = missing_fetch_directives
+        missing_all_directives: list = missing_fetch_directives if not "default-src" in csp_dict else missing_all_directives
         missing_all_directives += self.get_others_directives(csp_dict)
 
         if directive_type == "missing":
@@ -94,12 +93,12 @@ class ContentSecurityPolicy(HeaderTestBase):
                         continue
                     self._print_values(key, value_list)
 
-        elif directive_type == "other":
+        if directive_type == "other":
             for key, value_list in csp_dict.items():
                 if key in self._get_all_exists_other_directives():
                     self._print_values(key, value_list)
 
-        elif directive_type == "unstandard":
+        if directive_type == "unstandard":
             keys_to_remove = self._get_all_exists_fetch_directives() + self._get_all_exists_other_directives()
             for key in keys_to_remove:
                 if key in csp_dict:
@@ -233,6 +232,7 @@ class ContentSecurityPolicy(HeaderTestBase):
             "report-to",
             "report-uri",
             "object-src",
+            "upgrade-insecure-requests",
         ]
 
     def _get_all_exists_fetch_directives(self):
@@ -253,7 +253,7 @@ class ContentSecurityPolicy(HeaderTestBase):
             "style-src-attr",
             "worker-src",
             "fenced-frame-src",
-            "prefetch-src"
+            "prefetch-src", 
         ]
 
     def _move_keys_to_index(self, csp_dict: dict, keys_to_move: list, index: int):
