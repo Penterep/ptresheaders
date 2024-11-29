@@ -80,9 +80,8 @@ class PtResHeaders:
         LeaksFinder(args, self.ptjsonlib).find_technology_headers(headers)
         LeaksFinder(args, self.ptjsonlib).find_leaking_domains(headers)
 
-        _cors_headers = [h.lower() for h in ["Cross-Origin-Resource-Policy", "Cross-Origin-Opener-Policy", "Cross-Origin-Embedder-Policy", "Access-Control-Max-Age", "Access-Control-Expose-Headers", "Access-Control-Allow-Credentials", "Access-Control-Allow-Headers", "Access-Control-Allow-Methods", "Access-Control-Allow-Origin"]]
-        if any(key.startswith("cross-origin") or key in _cors_headers for key in (header.lower() for header in headers.keys())):
-            CrossOriginResourceSharing().test(args=args, headers=headers)
+        # Test CORS
+        CrossOriginResourceSharing().test(args=args, response_headers=headers)
 
         # Test observed headers for proper configuraton
         for observed_header, handler_function in self.OBSERVED_HEADERS_MODULES.items():

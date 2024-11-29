@@ -88,8 +88,8 @@ class StrictTransportSecurity(HeaderTestBase):
         """
 
         if value < 2592000:
-            return "VULN", "too small value"
+            return "VULN", "(too small value)"
         elif value < 31536000:
-            return "WARNING", "warning value"
+            return "WARNING", "(warning value)"
         else:
             return "NOTVULN", ""
