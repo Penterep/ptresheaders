@@ -20,7 +20,7 @@ class CrossOriginResourceSharing:
 
             for header_dict in cross_origin_headers:
                 header_name, value = next(iter(header_dict.items()))  # Unpack the single key-value pair
-                bullet, output_value = self._analyze_header(key, value)
+                bullet, output_value = self._analyze_header(header_name, value)
                 # Print each CORS header with details
                 ptprint(f'{header_name}: {output_value}', bullet_type=bullet, condition=not args.json, indent=4)
 
