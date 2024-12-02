@@ -1,4 +1,8 @@
+import pkg_resources
+from ptlibs import ptmisclib
 from ptlibs.ptprinthelper import ptprint, out_if
+
+import os, re
 
 LEAKING_HEADERS = [
     "server",
@@ -45,4 +49,20 @@ class LeaksFinder():
         ptprint(output, "TEXT", True, indent=0, end="\n")
 
     def find_leaking_domains(self, headers: dict):
-        pass
+        tlds = ptmisclib.get_tlds()
+        domain_pattern = r"(?:\*\.|[a-zA-Z0-9-]+\.)*[a-zA-Z0-9-]+\.(?:[a-zA-Z]{2,})(?::\d{1,5})?(?=\b)"
+
+        potential_domains = re.findall(domain_pattern, str(headers))
+        valid_domains = sorted(set([domain for domain in potential_domains if domain.split('.')[-1].split(":")[0].upper() in tlds])) # if 'tld' ends with tld
+        ptprint(f"Domains in headers:", "INFO", not self.args.json and valid_domains, newline_above=True, colortext=True)
+        for d in valid_domains:
+            ptprint(d, "TEXT", not self.args.json, indent=4, end="\n")
+
+
+    def find_ipv4(self, headers: dict):
+        """Find IPv4 addresses in provided string"""
+        ipv4_pattern = r'((?<![\d.])(?:(?:[1-9]?\d|1\d\d|2[0-4]\d|25[0-5])\.){3}(?:[1-9]?\d|1\d\d|2[0-4]\d|25[0-5]))(:\d{1,4})?(?![\d.])'
+        valid_ips = sorted(set(re.findall(ipv4_pattern, str(headers))))
+        ptprint(f"IPv4 in headers:", "INFO", not self.args.json and valid_ips, newline_above=True, colortext=True)
+        for ip in valid_ips:
+            ptprint(''.join(ip), "TEXT", not self.args.json, indent=4, end="\n")
