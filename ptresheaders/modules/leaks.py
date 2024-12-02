@@ -1,4 +1,3 @@
-import pkg_resources
 from ptlibs import ptmisclib
 from ptlibs.ptprinthelper import ptprint, out_if
 
