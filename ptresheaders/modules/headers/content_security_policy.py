@@ -1,5 +1,8 @@
 from modules.headers._header_test_base import HeaderTestBase
 from ptlibs.ptprinthelper import ptprint
+from ptlibs.parsers.http_request_parser import HttpRequestParser
+
+from bs4 import BeautifulSoup
 
 class ContentSecurityPolicy(HeaderTestBase):
 
@@ -13,6 +16,19 @@ class ContentSecurityPolicy(HeaderTestBase):
         ["https:", "ERROR", "PT-WEB-CODE1"],
     ]
 
+    def print_meta_tags(self, response):
+        """Print all meta tags if text/html in content type"""
+        content_type = next((value for key, value in response.headers.items() if key.lower() == "content-type"), None)
+        if "text/html" not in content_type:
+            return
+        soup = BeautifulSoup(response.text, "lxml")
+        meta_tags = soup.find_all("meta")
+        if meta_tags:
+            ptprint(f"Meta tags:", "", condition=not self.args.json, newline_above=True, indent=4)
+            for meta in meta_tags:
+                ptprint(meta, "", condition=not self.args.json, indent=8)
+            #ptprint(" ", "", condition=not self.args.json, indent=8)
+
     def test_header(self, header_value: str):
         """
         Tests the provided header value for compliance with the Content Security Policy.
@@ -21,11 +37,14 @@ class ContentSecurityPolicy(HeaderTestBase):
         :type header_value: str
         """
         response_directives = self._parse_directives(header_value)
+        self.printed_policy_definition: bool = False
         self.print_directives(response_directives, "missing")
         self.print_directives(response_directives, "default-src")
         self.print_directives(response_directives, "fetch")
         self.print_directives(response_directives, "other")
-        self.print_directives(response_directives, "unstandard")
+        self.print_directives(response_directives, "policy-uri")
+
+        self.print_meta_tags(response=self.response)
 
     def print_directives(self, csp_dict: dict, directive_type: str):
         """
@@ -78,25 +97,28 @@ class ContentSecurityPolicy(HeaderTestBase):
         if directive_type == "default-src":
             if not "default-src" in csp_dict:
                 return
-            ptprint(f"Policy definition:", "", not self.args.json, newline_above=True, indent=4)
+            ptprint(f"Policy definition:", "", condition=not self.args.json and (not self.printed_policy_definition), newline_above=True, indent=4)
             ptprint('default-src', "", not self.args.json, indent=8)
             for key in missing_fetch_directives:
                 ptprint(key, "", not self.args.json, indent=12)
             self._print_values("", csp_dict.get("default-src", []))
+            self.printed_policy_definition = True
 
-        if directive_type == "fetch": # Fetched ktery nejsou
-            ptprint(f"Policy definition:", "TITLE", condition=not self.args.json and (not "default-src" in csp_dict and any(d in csp_dict for d in self._get_all_exists_fetch_directives())), newline_above=True)
-            #if not "default-src" in csp_dict and any(d in csp_dict for d in self._get_all_exists_fetch_directives()):
+        if directive_type == "fetch":
+            ptprint(f"Policy definition:", "", condition=not self.args.json and (not self.printed_policy_definition), newline_above=True, indent=4)
             for key, value_list in csp_dict.items():
                 if key in self._get_all_exists_fetch_directives():
                     if key == "default-src":
                         continue
                     self._print_values(key, value_list)
+            self.printed_policy_definition = True
 
         if directive_type == "other":
+            ptprint(f"Policy definition:", "", condition=not self.args.json and (not self.printed_policy_definition), newline_above=True, indent=4)
             for key, value_list in csp_dict.items():
                 if key in self._get_all_exists_other_directives():
                     self._print_values(key, value_list)
+            self.printed_policy_definition = True
 
         if directive_type == "unstandard":
             keys_to_remove = self._get_all_exists_fetch_directives() + self._get_all_exists_other_directives()
@@ -108,6 +130,14 @@ class ContentSecurityPolicy(HeaderTestBase):
                 ptprint("Non-standard directives:", "", not self.args.json, newline_above=True, indent=4)
                 for key, value_list in csp_dict.items():
                     self._print_values(key, value_list)
+
+        if directive_type == "policy-uri":
+            if "policy-uri" in csp_dict.keys():
+                ptprint("Policy-Uri:", "", not self.args.json, newline_above=True, indent=4)
+                # TODO: Add-Vulnerability
+                for value in csp_dict["policy-uri"]:
+                    ptprint(value, "", not self.args.json, indent=8)
+                ptprint("Deprecated directive", "WARNING", not self.args.json, indent=8)
 
     def _print_values(self, key, value_list, indent=8):
         """Helper method to print sorted values with vulnerability checks."""
@@ -253,7 +283,7 @@ class ContentSecurityPolicy(HeaderTestBase):
             "style-src-attr",
             "worker-src",
             "fenced-frame-src",
-            "prefetch-src", 
+            "prefetch-src",
         ]
 
     def _move_keys_to_index(self, csp_dict: dict, keys_to_move: list, index: int):
