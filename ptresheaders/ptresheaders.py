@@ -18,7 +18,6 @@
     along with ptresheaders.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 import argparse
 import os
 import sys; sys.path.append(__file__.rsplit("/", 1)[0])
@@ -35,6 +34,8 @@ from ptlibs.ptprinthelper import ptprint, out_if
 from modules.headers import content_security_policy, strict_transport_security, x_frame_options, x_content_type_options, referrer_policy, content_type, permissions_policy, reporting_endpoints
 from modules.cors import CrossOriginResourceSharing
 from modules.leaks import LeaksFinder
+
+from collections import Counter
 
 class PtResHeaders:
     """Script connects to target <url> and analyses response headers"""
@@ -62,50 +63,53 @@ class PtResHeaders:
 
     def run(self, args) -> None:
         """Main method"""
-
-        ptprint(f"Connecting to URL: {args.url}", "TITLE", not args.json, colortext=True, end=" ")
         response, dump = self.load_url(args)
         headers: dict = response.headers
+        raw_headers: dict = response.raw.headers
 
         found_missing_headers: list = []
-        found_deprecated_headers: list = []
-
-        ptprint(f"[{response.status_code}]", "TEXT", not args.json)
-        ptprint(f"Response Headers:", "INFO", not args.json, colortext=True)
+        found_deprecated_headers: set = set()
+        found_duplicit_headers: list = []
 
         # Print all response headers
-        self.print_response_headers(headers)
+        self.print_response_headers(raw_headers)
 
         # Print info leaking headers
         LeaksFinder(args, self.ptjsonlib).find_technology_headers(headers)
         LeaksFinder(args, self.ptjsonlib).find_leaking_domains(headers)
+        LeaksFinder(args, self.ptjsonlib).find_ipv4(headers)
 
         # Test CORS
         CrossOriginResourceSharing().test(args=args, response_headers=headers)
 
+        # Create a set to track processed headers (for duplicites)
+        processed_headers = set()
         # Test observed headers for proper configuraton
         for observed_header, handler_function in self.OBSERVED_HEADERS_MODULES.items():
-            if observed_header.lower() in (header.lower() for header in headers.keys()):
-                # Pokud hlavička existuje, zavolejte příslušnou funkci
-                handler_function(self.ptjsonlib, args, observed_header, headers[observed_header]).test_header(header_value=headers[observed_header])
+            # Check if the header exists in the raw_headers dictionary (case-insensitive)
+            if observed_header.lower() in (header.lower() for header in raw_headers.keys()):
+                for header, header_values in raw_headers.items():
+                    normalized_header = header.lower()
+                    if normalized_header == observed_header.lower():
+                        is_duplicate = normalized_header in processed_headers
+                        handler_function(self.ptjsonlib, args, observed_header, header_values, response, is_duplicate).test_header(header_value=header_values)
+                        processed_headers.add(normalized_header)
                 if observed_header.lower() in [h.lower() for h in self.DEPRECATED_HEADERS]:
-                    found_deprecated_headers.append(observed_header)
+                    found_deprecated_headers.add(observed_header)
             else:
                 found_missing_headers.append(observed_header)
 
-        ptprint(" ", condition=not args.json)
-        if found_deprecated_headers:
-            ptprint(f"Deprecated security headers:", bullet_type="WARNING", condition=not args.json)
-            for header in found_deprecated_headers:
-                ptprint(f"{header}", bullet_type="TEXT", condition=not args.json, indent=8)
-                self.ptjsonlib.add_vulnerability(f"WARNIG-DEPRECATED-HEADER-{header}")
-            ptprint(f" ", bullet_type="TEXT", condition=not args.json)
 
-        if found_missing_headers:
-            ptprint(f"Missing security headers:", bullet_type="ERROR", condition=not args.json)
-            for header in found_missing_headers:
-                ptprint(f"{header}", bullet_type="TEXT", condition=not args.json, indent=8)
-                self.ptjsonlib.add_vulnerability(f"MISSING-HEADER-{header}")
+        ptprint(" ", condition=not args.json)
+        self.report_deprecated_headers(found_deprecated_headers, args)
+        self.report_missing_headers(found_missing_headers, args)
+        self.report_duplicate_headers(raw_headers, args)
+
+        if not args.json and response.is_redirect:
+            if self._yes_no_prompt("Returned response is an redirect, Scan again while following redirects? Y/n"):
+                ptprint("\n\n\n", condition=not args.json, end="")
+                args.redirects = True
+                self.run(args)
 
         self.ptjsonlib.set_status("finished")
         ptprint(self.ptjsonlib.get_result_json(), "", self.json)
@@ -113,15 +117,56 @@ class PtResHeaders:
     def load_url(self, args):
         try:
             response, dump = ptmisclib.load_url(args.url, args.method, data=args.data, headers=args.headers, cache=args.cache, redirects=args.redirects, proxies=args.proxy, timeout=args.timeout, dump_response=True)
+            ptprint(f"Connecting to URL: {response.url}", "TITLE", not args.json, colortext=True, end=" ")
+            ptprint(f"[{response.status_code}]", "TEXT", not args.json, end="\n")
             return (response, dump)
         except Exception as e:
+            ptprint(f"Connecting to URL: {args.url}", "TITLE", not args.json, colortext=True, end=" ")
             ptprint(f"[err]", "TEXT", not args.json)
             self.ptjsonlib.end_error(f"Error retrieving response from server.", args.json)
 
+    def report_deprecated_headers(self, deprecated_headers, args):
+        if deprecated_headers:
+            ptprint(f"Deprecated security headers:", bullet_type="WARNING", condition=not args.json)
+            for header in deprecated_headers:
+                ptprint(f"{header}", bullet_type="TEXT", condition=not args.json, indent=8)
+                self.ptjsonlib.add_vulnerability(f"WARNIG-DEPRECATED-HEADER-{header}")
+            ptprint(f" ", bullet_type="TEXT", condition=not args.json)
+
+    def report_missing_headers(self, missing_headers, args):
+        if missing_headers:
+            ptprint(f"Missing security headers:", bullet_type="ERROR", condition=not args.json)
+            for header in missing_headers:
+                ptprint(f"{header}", bullet_type="TEXT", condition=not args.json, indent=8)
+                self.ptjsonlib.add_vulnerability(f"MISSING-HEADER-{header}")
+
+    def report_duplicate_headers(self, raw_headers, args):
+        duplicit_headers: set = set()
+        key_counts: dict = Counter(key for key, _ in raw_headers.items())
+        for header_name, value in raw_headers.items():
+            if key_counts.get(header_name, 0) > 1:
+                duplicit_headers.add(header_name)
+        if duplicit_headers:
+            ptprint(f"Duplicit headers:", "WARNING", not self.args.json, newline_above=True)
+            for header_name in duplicit_headers:
+                ptprint(header_name, "", not self.args.json, indent=8)
+
     def print_response_headers(self, headers: dict):
         """Print all response headers"""
+        ptprint(f"Response Headers:", "INFO", not self.args.json, colortext=True)
         for header_name, header_value in headers.items():
             ptprint(f"{header_name}: {header_value}", "ADDITIONS", not self.args.json, colortext=True, indent=4)
+
+    def _yes_no_prompt(self, message) -> bool:
+        ptprint(message, "WARNING", not self.args.json, newline_above=True, end="")
+        action = input(f': ').upper().strip()
+        if action == "Y":
+            return True
+        elif action == "N":# or action == "":
+            return False
+        else:
+            return True
+
 
 def get_help():
     return [
@@ -177,6 +222,7 @@ def parse_args():
     args = parser.parse_args()
     args.headers = ptnethelper.get_request_headers(args)
     args.headers.update({"Referer": "https://www.example.com/", "Origin": "https://www.example.com/"})
+    args.timeout = args.timeout if not args.proxy else None
     args.proxy = {"http": args.proxy, "https": args.proxy}
 
     ptprinthelper.print_banner(SCRIPTNAME, __version__, args.json)
