@@ -27,7 +27,7 @@ class ContentSecurityPolicy(HeaderTestBase):
             ptprint(f"Meta tags:", "", condition=not self.args.json, newline_above=True, indent=4)
             for meta in meta_tags:
                 ptprint(meta, "", condition=not self.args.json, indent=8)
-            #ptprint(" ", "", condition=not self.args.json, indent=8)
+            ptprint(" ", "", condition=not self.args.json, indent=8)
 
     def test_header(self, header_value: str):
         """
@@ -37,6 +37,8 @@ class ContentSecurityPolicy(HeaderTestBase):
         :type header_value: str
         """
         response_directives = self._parse_directives(header_value)
+        self.print_meta_tags(response=self.response)
+
         self.printed_policy_definition: bool = False
         self.print_directives(response_directives, "missing")
         self.print_directives(response_directives, "default-src")
@@ -44,7 +46,6 @@ class ContentSecurityPolicy(HeaderTestBase):
         self.print_directives(response_directives, "other")
         self.print_directives(response_directives, "policy-uri")
 
-        self.print_meta_tags(response=self.response)
 
     def print_directives(self, csp_dict: dict, directive_type: str):
         """
