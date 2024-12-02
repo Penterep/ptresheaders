@@ -31,7 +31,7 @@ from ptlibs import ptjsonlib, ptprinthelper, ptmisclib, ptnethelper
 
 from ptlibs.ptprinthelper import ptprint, out_if
 
-from modules.headers import content_security_policy, strict_transport_security, x_frame_options, x_content_type_options, referrer_policy, content_type, permissions_policy, reporting_endpoints
+from modules.headers import content_security_policy, strict_transport_security, x_frame_options, x_content_type_options, referrer_policy, content_type, permissions_policy, reporting_endpoints, x_dns_prefetch_control
 from modules.cors import CrossOriginResourceSharing
 from modules.leaks import LeaksFinder
 
@@ -49,6 +49,7 @@ class PtResHeaders:
         "Referrer-Policy": referrer_policy.ReferrerPolicy,
         "Content-Security-Policy": content_security_policy.ContentSecurityPolicy,
         "Reporting-Endpoints": reporting_endpoints.ReportingEndpoints,
+        "X-DNS-Prefetch-Control": x_dns_prefetch_control.XDNSPrefetchControl,
     }
 
     DEPRECATED_HEADERS = [
