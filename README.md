@@ -51,6 +51,8 @@ ptresheaders -u https://www.example.com --proxy 127.0.0.1:8080
 ## Dependencies
 ```
 ptlibs
+bs4
+lxml
 ```
 
 ## License
