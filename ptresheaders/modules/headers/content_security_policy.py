@@ -2,7 +2,6 @@ from modules.headers._header_test_base import HeaderTestBase
 from ptlibs.ptprinthelper import ptprint
 from ptlibs.parsers.http_request_parser import HttpRequestParser
 
-from bs4 import BeautifulSoup
 
 class ContentSecurityPolicy(HeaderTestBase):
 
@@ -16,18 +15,6 @@ class ContentSecurityPolicy(HeaderTestBase):
         ["https:", "ERROR", "PT-WEB-CODE1"],
     ]
 
-    def print_meta_tags(self, response):
-        """Print all meta tags if text/html in content type"""
-        content_type = next((value for key, value in response.headers.items() if key.lower() == "content-type"), None)
-        if "text/html" not in content_type:
-            return
-        soup = BeautifulSoup(response.text, "lxml")
-        meta_tags = soup.find_all("meta")
-        if meta_tags:
-            ptprint(f"Meta tags:", "", condition=not self.args.json, newline_above=True, indent=4)
-            for meta in meta_tags:
-                ptprint(meta, "", condition=not self.args.json, indent=8)
-            ptprint(" ", "", condition=not self.args.json, indent=8)
 
     def test_header(self, header_value: str):
         """
@@ -37,7 +24,6 @@ class ContentSecurityPolicy(HeaderTestBase):
         :type header_value: str
         """
         response_directives = self._parse_directives(header_value)
-        self.print_meta_tags(response=self.response)
 
         self.printed_policy_definition: bool = False
         self.print_directives(response_directives, "missing")
@@ -142,26 +128,30 @@ class ContentSecurityPolicy(HeaderTestBase):
 
     def _print_values(self, key, value_list, indent=8):
         """Helper method to print sorted values with vulnerability checks."""
-        ptprint(key, "", not self.args.json and key, newline_above=False, indent=indent)
+        if not any(value_list):
 
-        if not value_list:  # If the value list exists but is empty
-            ptprint(f"Null value", "WARNING", not self.args.json, indent=indent+4)
+            if key in ["upgrade-insecure-requests"]:
+                ptprint(key, "OK", not self.args.json and key, newline_above=False, indent=indent)
+            else:
+                ptprint(key, "WARNING", not self.args.json and key, newline_above=False, indent=indent)
+                ptprint(f"Null value", "WARNING", not self.args.json, indent=indent+4)
             return
+        else:
+            ptprint(key, "", not self.args.json and key, newline_above=False, indent=indent)
+            for value in sorted(value_list):
+                is_vuln = False
+                for unsafe_string, bullet_type, json_vuln_code in self.UNSAFE_VALUES:  # Extract bullet type
+                    if unsafe_string == value:
+                        ptprint(value, bullet_type, not self.args.json, indent=indent+4)
+                        is_vuln = True
+                        break
 
-        for value in sorted(value_list):
-            is_vuln = False
-            for unsafe_string, bullet_type, json_vuln_code in self.UNSAFE_VALUES:  # Extract bullet type
-                if unsafe_string == value:
-                    ptprint(value, bullet_type, not self.args.json, indent=indent+4)
-                    is_vuln = True
-                    break
+                if value.startswith("http://"):
+                    ptprint(value, "WARNING", not self.args.json, indent=indent+4)
+                    continue
 
-            if value.startswith("http://"):
-                ptprint(value, "WARNING", not self.args.json, indent=indent+4)
-                continue
-
-            if not is_vuln:
-                ptprint(value, "NOTVULN", not self.args.json, indent=indent+4)
+                if not is_vuln:
+                    ptprint(value, "NOTVULN", not self.args.json, indent=indent+4)
 
     def get_missing_fetch_directives(self, csp_dict):
         """
