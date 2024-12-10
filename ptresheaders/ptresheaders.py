@@ -25,6 +25,7 @@ import re
 import urllib
 
 import requests
+from bs4 import BeautifulSoup
 
 from _version import __version__
 from ptlibs import ptjsonlib, ptprinthelper, ptmisclib, ptnethelper
@@ -34,6 +35,8 @@ from ptlibs.ptprinthelper import ptprint, out_if
 from modules.headers import content_security_policy, strict_transport_security, x_frame_options, x_content_type_options, referrer_policy, content_type, permissions_policy, reporting_endpoints, x_dns_prefetch_control
 from modules.cors import CrossOriginResourceSharing
 from modules.leaks import LeaksFinder
+
+from ptcookiechecker.modules.cookie_tester import CookieTester
 
 from collections import Counter
 
@@ -74,6 +77,7 @@ class PtResHeaders:
 
         # Print all response headers
         self.print_response_headers(raw_headers)
+        self.print_meta_tags(response=response)
 
         # Print info leaking headers
         LeaksFinder(args, self.ptjsonlib).find_technology_headers(headers)
@@ -106,6 +110,9 @@ class PtResHeaders:
         self.report_missing_headers(found_missing_headers, args)
         self.report_duplicate_headers(raw_headers, args)
 
+        ptprint(f"Response cookies:", "INFO", not self.args.json, colortext=True, newline_above=True)
+        CookieTester().run(response, args, self.ptjsonlib)
+
         if not args.json and response.is_redirect:
             if self._yes_no_prompt("Returned response is an redirect, Scan again while following redirects? Y/n"):
                 ptprint("\n\n\n", condition=not args.json, end="")
@@ -114,6 +121,18 @@ class PtResHeaders:
 
         self.ptjsonlib.set_status("finished")
         ptprint(self.ptjsonlib.get_result_json(), "", self.json)
+
+    def print_meta_tags(self, response):
+        """Print all meta tags if text/html in content type"""
+        content_type = next((value for key, value in response.headers.items() if key.lower() == "content-type"), "")
+        if "text/html" not in content_type:
+            return
+        soup = BeautifulSoup(response.text, "lxml")
+        meta_tags = soup.find_all("meta")
+        if meta_tags:
+            ptprint(f"Meta tags:", "TITLE", condition=not self.args.json, newline_above=True, indent=0, colortext=True)
+            for meta in meta_tags:
+                ptprint(meta, "ADDITIONS", condition=not self.args.json, colortext=True, indent=4)
 
     def load_url(self, args):
         try:
@@ -129,7 +148,7 @@ class PtResHeaders:
     def report_deprecated_headers(self, deprecated_headers, args):
         if deprecated_headers:
             ptprint(f"Deprecated security headers:", bullet_type="WARNING", condition=not args.json)
-            for header in deprecated_headers:
+            for header in sorted(deprecated_headers):
                 ptprint(f"{header}", bullet_type="TEXT", condition=not args.json, indent=8)
                 self.ptjsonlib.add_vulnerability(f"WARNIG-DEPRECATED-HEADER-{header}")
             ptprint(f" ", bullet_type="TEXT", condition=not args.json)
@@ -137,7 +156,7 @@ class PtResHeaders:
     def report_missing_headers(self, missing_headers, args):
         if missing_headers:
             ptprint(f"Missing security headers:", bullet_type="ERROR", condition=not args.json)
-            for header in missing_headers:
+            for header in sorted(missing_headers):
                 ptprint(f"{header}", bullet_type="TEXT", condition=not args.json, indent=8)
                 self.ptjsonlib.add_vulnerability(f"MISSING-HEADER-{header}")
 
@@ -146,6 +165,8 @@ class PtResHeaders:
         key_counts: dict = Counter(key for key, _ in raw_headers.items())
         for header_name, value in raw_headers.items():
             if key_counts.get(header_name, 0) > 1:
+                if header_name.lower() == "set-cookie":
+                    continue
                 duplicit_headers.add(header_name)
         if duplicit_headers:
             ptprint(f"Duplicit headers:", "WARNING", not self.args.json, newline_above=True)
@@ -163,7 +184,7 @@ class PtResHeaders:
         action = input(f': ').upper().strip()
         if action == "Y":
             return True
-        elif action == "N":# or action == "":
+        elif action == "N":
             return False
         else:
             return True
@@ -190,7 +211,7 @@ def get_help():
             ["-C",  "--cache",                  "",                 "Enable HTTP cache"],
             ["-j",  "--json",                   "",                 "Enable JSON output"],
             ["-v",  "--version",                "",                 "Show script version and exit"],
-            ["-h",  "--help",                   "",                 "Show this help message and exit"],
+            ["-h",  "--help",                   "",                 "Show thcoohelp message and exit"],
         ]
         }]
 
