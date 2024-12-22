@@ -32,7 +32,7 @@ from ptlibs import ptjsonlib, ptprinthelper, ptmisclib, ptnethelper
 
 from ptlibs.ptprinthelper import ptprint, out_if
 
-from modules.headers import content_security_policy, strict_transport_security, x_frame_options, x_content_type_options, referrer_policy, content_type, permissions_policy, reporting_endpoints, x_dns_prefetch_control
+from modules.headers import content_security_policy, strict_transport_security, x_frame_options, x_content_type_options, referrer_policy, content_type, permissions_policy, reporting_endpoints, x_dns_prefetch_control, content_security_policy_report_only
 from modules.cors import CrossOriginResourceSharing
 from modules.leaks import LeaksFinder
 
@@ -51,6 +51,7 @@ class PtResHeaders:
         "Strict-Transport-Security": strict_transport_security.StrictTransportSecurity,
         "Referrer-Policy": referrer_policy.ReferrerPolicy,
         "Content-Security-Policy": content_security_policy.ContentSecurityPolicy,
+        "Content-Security-Policy-Report-Only": content_security_policy_report_only.ContentTypeReportOnly,
         "Reporting-Endpoints": reporting_endpoints.ReportingEndpoints,
         "X-DNS-Prefetch-Control": x_dns_prefetch_control.XDNSPrefetchControl,
     }
@@ -74,6 +75,7 @@ class PtResHeaders:
         found_missing_headers: list = []
         found_deprecated_headers: set = set()
         found_duplicit_headers: list = []
+        warnings: list = []
 
         # Print all response headers
         self.print_response_headers(raw_headers)
@@ -91,6 +93,7 @@ class PtResHeaders:
         processed_headers = set()
         # Test observed headers for proper configuraton
         for observed_header, handler_function in self.OBSERVED_HEADERS_MODULES.items():
+            #if handler_function == None: continue
             # Check if the header exists in the raw_headers dictionary (case-insensitive)
             if observed_header.lower() in (header.lower() for header in raw_headers.keys()):
                 for header, header_values in raw_headers.items():
@@ -101,17 +104,35 @@ class PtResHeaders:
                         processed_headers.add(normalized_header)
                 if observed_header.lower() in [h.lower() for h in self.DEPRECATED_HEADERS]:
                     found_deprecated_headers.add(observed_header)
+
+            # Observed header does not exists in response headers
             else:
-                found_missing_headers.append(observed_header)
+                if observed_header == "X-DNS-Prefetch-Control":
+                    continue
+                if observed_header == "Content-Security-Policy-Report-Only":
+                    continue
+
+                # Special logic for Content-Security-Policy
+                elif observed_header == "Content-Security-Policy":
+                    # CSP and CSPRO not exists
+                    if "Content-Security-Policy-Report-Only".lower() not in (header.lower() for header in raw_headers.keys()):
+                        found_missing_headers.append(observed_header)
+                        continue
+                    # CSP not exists, CSPRO exists
+                    if "Content-Security-Policy-Report-Only".lower() in (header.lower() for header in raw_headers.keys()):
+                        warnings.append(f"'{observed_header}' header is missing, but 'Content-Security-Policy-Report-Only' is present.")
+                        continue
+                else:
+                    found_missing_headers.append(observed_header)
 
 
-        ptprint(" ", condition=not args.json)
+        ptprint(f"Set-Cookie:", "INFO", not self.args.json, colortext=True, newline_above=True)
+        CookieTester().run(response, args, self.ptjsonlib)
+        self.report_warnings(warnings, args)
         self.report_deprecated_headers(found_deprecated_headers, args)
         self.report_missing_headers(found_missing_headers, args)
         self.report_duplicate_headers(raw_headers, args)
 
-        ptprint(f"Response cookies:", "INFO", not self.args.json, colortext=True, newline_above=True)
-        CookieTester().run(response, args, self.ptjsonlib)
 
         if not args.json and response.is_redirect:
             if self._yes_no_prompt("Returned response is an redirect, Scan again while following redirects? Y/n"):
@@ -144,6 +165,12 @@ class PtResHeaders:
             ptprint(f"Connecting to URL: {args.url}", "TITLE", not args.json, colortext=True, end=" ")
             ptprint(f"[err]", "TEXT", not args.json)
             self.ptjsonlib.end_error(f"Error retrieving response from server.", args.json)
+
+    def report_warnings(self, warnings, args):
+        ptprint(f"Warnings:", bullet_type="WARNING", condition=warnings and not args.json, newline_above=True)
+        for warning_message in warnings:
+            ptprint(warning_message, condition=not args.json, indent=8)
+        ptprint(" ", condition=not args.json)
 
     def report_deprecated_headers(self, deprecated_headers, args):
         if deprecated_headers:
@@ -188,6 +215,7 @@ class PtResHeaders:
             return False
         else:
             return True
+
 
 
 def get_help():
