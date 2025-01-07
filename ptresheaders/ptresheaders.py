@@ -94,6 +94,7 @@ class PtResHeaders:
         # Test observed headers for proper configuraton
         for observed_header, handler_function in self.OBSERVED_HEADERS_MODULES.items():
             #if handler_function == None: continue
+
             # Check if the header exists in the raw_headers dictionary (case-insensitive)
             if observed_header.lower() in (header.lower() for header in raw_headers.keys()):
                 for header, header_values in raw_headers.items():
@@ -239,7 +240,7 @@ def get_help():
             ["-C",  "--cache",                  "",                 "Enable HTTP cache"],
             ["-j",  "--json",                   "",                 "Enable JSON output"],
             ["-v",  "--version",                "",                 "Show script version and exit"],
-            ["-h",  "--help",                   "",                 "Show thcoohelp message and exit"],
+            ["-h",  "--help",                   "",                 "Show this help message and exit"],
         ]
         }]
 
