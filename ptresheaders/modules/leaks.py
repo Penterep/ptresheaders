@@ -55,7 +55,8 @@ class LeaksFinder():
         valid_domains = sorted(set([domain for domain in potential_domains if domain.split('.')[-1].split(":")[0].upper() in tlds])) # if 'tld' ends with tld
         ptprint(f"Domains in headers:", "INFO", not self.args.json and valid_domains, newline_above=True, colortext=True)
         for d in valid_domains:
-            ptprint(d, "TEXT", not self.args.json, indent=4, end="\n")
+            if d.lower() not in ["asp.net"]:
+                ptprint(d, "TEXT", not self.args.json, indent=4, end="\n")
 
 
     def find_ipv4(self, headers: dict):
