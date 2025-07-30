@@ -1,21 +1,21 @@
 #!/usr/bin/python3
 """
-    Copyright (c) 2024 Penterep Security s.r.o.
+Copyright (c) 2025 Penterep Security s.r.o.
 
-    ptresheaders - Response Header Parser
+ptresheaders - Response Header Parser
 
-    ptresheaders is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+ptresheaders is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-    ptresheaders is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+ptresheaders is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with ptresheaders.  If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License
+along with ptresheaders.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import argparse
@@ -82,9 +82,10 @@ class PtResHeaders:
         self.print_meta_tags(response=response)
 
         # Print info leaking headers
-        LeaksFinder(args, self.ptjsonlib).find_technology_headers(headers)
-        LeaksFinder(args, self.ptjsonlib).find_leaking_domains(headers)
-        LeaksFinder(args, self.ptjsonlib).find_ipv4(headers)
+        leaks_finder = LeaksFinder(args, self.ptjsonlib)
+        leaks_finder.find_technology_headers(headers)
+        leaks_finder.find_leaking_domains(headers)
+        leaks_finder.find_ipv4(headers)
 
         # Test CORS
         CrossOriginResourceSharing().test(args=args, response_headers=headers)
