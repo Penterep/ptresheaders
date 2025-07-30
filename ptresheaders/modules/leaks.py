@@ -38,7 +38,7 @@ class LeaksFinder():
 
     def find_technology_headers(self, headers: dict):
         leaking_headers = [
-            out_if(string=f"{header_name}: {header_value}\n", bullet_type="TEXT", indent=4)
+            out_if(string=f"{header_name}: {header_value}\n", bullet_type="TEXT", condition=not self.args.json, indent=4)
             for header_name, header_value in headers.items()
             if header_name.lower() in LEAKING_HEADERS
         ]
