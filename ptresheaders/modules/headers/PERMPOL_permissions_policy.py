@@ -49,11 +49,17 @@ class PermissionsPolicy(HeaderTestBase):
         ptprint(" ", "", condition=not self.args.json and bool(response_permissions_list), indent=0)
         self._print_permissions("Missing directives", sorted(missing_permissions), "WARNING")
 
+        if missing_permissions:
+            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-PERMPOLINV")
+
     def _print_permissions(self, label:str, permissions: list, bullet="OK"):
         if not permissions:
             return
         ptprint(f"{label}:", "", condition=not self.args.json, indent=4)
         for p in permissions:
+            if "*" in p:
+                bullet="VULN"
+                self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-PERMPOLINV")
             ptprint(p, bullet_type=bullet, condition=not self.args.json, indent=8)
 
     def _parse_permissions(self, header_value: str):

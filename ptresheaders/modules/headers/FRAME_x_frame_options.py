@@ -53,8 +53,10 @@ class XFrameOptions(HeaderTestBase):
         elif header_value_list[0].upper() in ["ALLOW-FROM"]:
             allow_from_values = header_value_list[1:]
             ptprint(f"ALLOW-FROM", "WARNING", not self.args.json, indent=8)
+            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-FRAMEINV")
             for key in allow_from_values:
                 ptprint(key, "TEXT", not self.args.json, indent=12)
 
         else:
             ptprint(f"{header_value} (value is not valid)", "ERROR", not self.args.json, indent=8)
+            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-FRAMEINV")

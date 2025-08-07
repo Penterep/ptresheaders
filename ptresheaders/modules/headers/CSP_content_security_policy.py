@@ -75,10 +75,13 @@ class ContentSecurityPolicy(HeaderTestBase):
         missing_all_directives: list = missing_fetch_directives if not "default-src" in csp_dict else missing_all_directives
         missing_all_directives += self.get_others_directives(csp_dict)
 
+        if missing_all_directives:
+            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-CSPINV")
+
         if directive_type == "missing":
             ptprint("Missing directives:", "", not self.args.json, indent=4)
             for key in missing_all_directives:
-                self.ptjsonlib.add_vulnerability(f"MISSING-DIRECTIVE-{key}")
+                #self.ptjsonlib.add_vulnerability(f"MISSING-DIRECTIVE-{key}")
                 ptprint(key, "VULN", not self.args.json, indent=8)
 
         if directive_type == "default-src":

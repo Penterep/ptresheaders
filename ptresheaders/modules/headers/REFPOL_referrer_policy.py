@@ -19,6 +19,8 @@ class ReferrerPolicy(HeaderTestBase):
         for value in header_values_list:
             bullet = self._get_bullet_type(value)
             ptprint(value, bullet_type=bullet, condition=not self.args.json, indent=8)
+            if bullet == "VULN":
+                self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-REFPOLINV")
 
     def _get_bullet_type(self, value):
         for possible_value in self.possible_values:
