@@ -117,9 +117,10 @@ class PtResHeaders:
                 else:
                     found_missing_headers.append(observed_header)
 
+        if "SC" in args.tests:
+            ptprint(f"Set-Cookie:", "INFO", not self.args.json, colortext=True, newline_above=True)
+            CookieTester().run(response, args, self.ptjsonlib)
 
-        ptprint(f"Set-Cookie:", "INFO", not self.args.json, colortext=True, newline_above=True)
-        CookieTester().run(response, args, self.ptjsonlib)
         self.report_warnings(warnings, args)
         self.report_deprecated_headers(found_deprecated_headers, args)
         self.report_missing_headers(found_missing_headers, args)
@@ -303,6 +304,9 @@ def get_help():
             label = f" {name.replace('_', '-').title()}"
             rows.append(["", "", test_code, label])
 
+        # Hardcore set cookie test
+        rows.append(["", "", " SC", " Set-Cookie"])
+
         return sorted(rows, key=lambda x: x[2])
 
     return [
@@ -348,6 +352,8 @@ def get_available_modules(mode: Literal["full", "prefix", "name", "header"] = "f
         for f in sorted(os.listdir(modules_folder))
         if f.endswith(".py") and not f.startswith("_")
     ]
+    module_names.append("SC")
+
 
     match mode:
         case "prefix":
