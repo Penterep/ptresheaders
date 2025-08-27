@@ -371,7 +371,7 @@ def get_available_modules(mode: Literal["full", "prefix", "name", "header"] = "f
 
 
 def parse_args():
-    _header_choices = list(dict.fromkeys(get_available_modules("prefix")))
+    _header_choices = list(dict.fromkeys(get_available_modules("prefix"))) + ["SC"]
     parser = argparse.ArgumentParser(add_help="False", description=f"{SCRIPTNAME} <options>")
     exclusive = parser.add_mutually_exclusive_group(required=True)
     exclusive.add_argument("-u",  "--url",         type=str)
