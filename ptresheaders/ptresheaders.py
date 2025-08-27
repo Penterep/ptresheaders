@@ -305,9 +305,10 @@ def get_help():
             rows.append(["", "", test_code, label])
 
         # Hardcore set cookie test
+        rows = sorted(rows, key=lambda x: x[2])
         rows.append(["", "", " SC", " Set-Cookie"])
 
-        return sorted(rows, key=lambda x: x[2])
+        return rows
 
     return [
         {"description": ["Script connects to target <url> and analyses response headers"]},
@@ -352,7 +353,7 @@ def get_available_modules(mode: Literal["full", "prefix", "name", "header"] = "f
         for f in sorted(os.listdir(modules_folder))
         if f.endswith(".py") and not f.startswith("_")
     ]
-    module_names.append("SC")
+    #module_names.append("SC")
 
 
     match mode:
@@ -374,7 +375,7 @@ def parse_args():
     parser = argparse.ArgumentParser(add_help="False", description=f"{SCRIPTNAME} <options>")
     exclusive = parser.add_mutually_exclusive_group(required=True)
     exclusive.add_argument("-u",  "--url",         type=str)
-    parser.add_argument("-ts",  "--tests",         type=str, nargs="+", default=_header_choices, choices=_header_choices)
+    parser.add_argument("-ts",  "--tests",         type=str, nargs="+", default=_header_choices, choices=_header_choices, metavar="")
     parser.add_argument("-m",  "--method",         type=str.upper, default="GET")
     parser.add_argument("-p",  "--proxy",          type=str)
     parser.add_argument("-d",  "--data",           type=str)
