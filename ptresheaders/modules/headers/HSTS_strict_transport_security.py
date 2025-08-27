@@ -46,9 +46,9 @@ class StrictTransportSecurity(HeaderTestBase):
         self.attribs["preload"] = bool(preload_pattern.search(header_value))
 
         if not self.attribs["preload"]:
-            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-HSTSINV")
+            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-HSTSPL")
         if not self.attribs["includeSubDomains"]:
-            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-HSTSINV")
+            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-HSTSSD")
 
         self._print_result()
 
@@ -56,8 +56,8 @@ class StrictTransportSecurity(HeaderTestBase):
         """
         Prints the results of parsing the `Strict-Transport-Security` header.
 
-        This method iterates through the parsed components (`max-age`, `includeSubDomains`, `preload`) 
-        and prints their respective values, along with a message indicating whether they are valid 
+        This method iterates through the parsed components (`max-age`, `includeSubDomains`, `preload`)
+        and prints their respective values, along with a message indicating whether they are valid
         or not, using a bullet type for each.
 
         :returns: None
