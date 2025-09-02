@@ -93,10 +93,10 @@ class StrictTransportSecurity(HeaderTestBase):
         """
 
         if value < 2592000:
+            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-HSTSINV")
             return "VULN", "(too small value, recommended value least 31536000)"
-            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-HSTSINV")
         elif value < 31536000:
-            return "WARNING", "(recommended value least 31536000)"
             self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-HSTSINV")
+            return "WARNING", "(recommended value least 31536000)"
         else:
             return "NOTVULN", ""
