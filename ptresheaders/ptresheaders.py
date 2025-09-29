@@ -100,6 +100,7 @@ class PtResHeaders:
             # Observed header does not exists in response headers
             else:
                 if observed_header == "X-DNS-Prefetch-Control":
+                    warnings.append(f"'{observed_header}' header is missing")
                     continue
                 if observed_header == "Content-Security-Policy-Report-Only":
                     continue
@@ -114,12 +115,13 @@ class PtResHeaders:
                     if "Content-Security-Policy-Report-Only".lower() in (header.lower() for header in raw_headers.keys()):
                         warnings.append(f"'{observed_header}' header is missing, but 'Content-Security-Policy-Report-Only' is present.")
                         continue
+
                 else:
                     found_missing_headers.append(observed_header)
 
         if "SC" in args.tests:
             ptprint(f"Set-Cookie:", "INFO", not self.args.json, colortext=True, newline_above=True)
-            CookieTester().run(response, args, self.ptjsonlib)
+            CookieTester().run(response, args, self.ptjsonlib, tests=["SAMESITE", "SECURE", "HTTPONLY", "FPD"])
 
         self.report_warnings(warnings, args)
         self.report_deprecated_headers(found_deprecated_headers, args)
