@@ -65,7 +65,6 @@ class PtResHeaders:
         found_duplicit_headers: list = []
         warnings: list = []
 
-
         # Print all response headers
         self.print_response_headers(raw_headers)
         self.print_meta_tags(response=response)
@@ -99,14 +98,17 @@ class PtResHeaders:
 
             # Observed header does not exists in response headers
             else:
-                if observed_header == "X-DNS-Prefetch-Control":
-                    warnings.append(f"'{observed_header}' header is missing")
+                if observed_header.lower() == "X-Robots-Tag".lower():
+                    warnings.append(observed_header)
                     continue
-                if observed_header == "Content-Security-Policy-Report-Only":
+                if observed_header.lower() == "X-Dns-Prefetch-Control".lower():
+                    warnings.append(observed_header)
+                    continue
+                if observed_header.lower() == "Content-Security-Policy-Report-Only".lower():
                     continue
 
                 # Special logic for Content-Security-Policy
-                elif observed_header == "Content-Security-Policy":
+                elif observed_header.lower() == "Content-Security-Policy".lower():
                     # CSP and CSPRO not exists
                     if "Content-Security-Policy-Report-Only".lower() not in (header.lower() for header in raw_headers.keys()):
                         found_missing_headers.append(observed_header)
@@ -115,13 +117,12 @@ class PtResHeaders:
                     if "Content-Security-Policy-Report-Only".lower() in (header.lower() for header in raw_headers.keys()):
                         warnings.append(f"'{observed_header}' header is missing, but 'Content-Security-Policy-Report-Only' is present.")
                         continue
-
                 else:
                     found_missing_headers.append(observed_header)
 
         if "SC" in args.tests:
             ptprint(f"Set-Cookie:", "INFO", not self.args.json, colortext=True, newline_above=True)
-            CookieTester().run(response, args, self.ptjsonlib, tests=["SAMESITE", "SECURE", "HTTPONLY", "FPD"])
+            CookieTester().run(response, args, self.ptjsonlib, test_cookie_issues=False)#, tests=["SAMESITE", "SECURE", "HTTPONLY"], test_cookie)
 
         self.report_warnings(warnings, args)
         self.report_deprecated_headers(found_deprecated_headers, args)
