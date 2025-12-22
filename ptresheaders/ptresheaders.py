@@ -58,7 +58,11 @@ class PtResHeaders:
 
         response, dump = self.load_url(args)
         headers: dict = response.headers
-        raw_headers: dict = response.raw.headers
+
+        try:
+            raw_headers: dict = response.raw.headers
+        except:
+            raw_headers: dict = headers
 
         found_missing_headers: list = []
         found_deprecated_headers: set = set()

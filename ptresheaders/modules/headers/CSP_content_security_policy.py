@@ -131,10 +131,13 @@ class ContentSecurityPolicy(HeaderTestBase):
 
     def _print_values(self, key, value_list, indent=8):
         """Helper method to print sorted values with vulnerability checks."""
+
+        value_list = [value.strip("'") for value in value_list]
         if not any(value_list):
 
             if key in ["upgrade-insecure-requests"]:
-                ptprint(key, "OK", not self.args.json and key, newline_above=False, indent=indent)
+                ptprint(key, "TEXT", not self.args.json, indent=8)
+                ptprint("directive is present", "OK", not self.args.json and key, newline_above=False, indent=indent+4)
             else:
                 ptprint(key, "WARNING", not self.args.json and key, newline_above=False, indent=indent)
                 ptprint(f"Null value", "WARNING", not self.args.json, indent=indent+4)
