@@ -185,8 +185,10 @@ class PtResHeaders:
             ptprint(f"Missing security headers:", bullet_type="ERROR", condition=not args.json)
             for header in sorted(missing_headers):
                 ptprint(f"{header}", bullet_type="TEXT", condition=not args.json, indent=8)
-                #self.ptjsonlib.add_vulnerability(f"MISSING-HEADER-{header}")
-                self.ptjsonlib.add_vulnerability(f"PTV-WEB-HTTP-{self.PREFIX_MAP[header]}MIS")
+
+                self.ptjsonlib.add_vulnerability(f"PTV-WEB-HTTP-{self.PREFIX_MAP[header]}MIS", header_contents=header)
+            ptprint(" ", condition=not args.json)
+            
 
     def report_duplicate_headers(self, raw_headers, args):
         duplicit_headers: set = set()
