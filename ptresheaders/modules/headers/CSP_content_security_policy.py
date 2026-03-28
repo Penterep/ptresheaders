@@ -9,6 +9,8 @@ class ContentSecurityPolicy(HeaderTestBase):
         ["*", "ERROR", "PT-WEB-CODE1"],
         ["'unsafe-inline'", "ERROR", "PT-WEB-CODE1"],
         ["'unsafe-eval'", "ERROR", "PT-WEB-CODE1"],
+        ["'unsafe-hashes'", "ERROR", "PT-WEB-CODE1"],
+        ["'unsafe-allow-redirects'", "ERROR", "PT-WEB-CODE1"],
         ["data:", "ERROR", "PT-WEB-CODE1"],
         ["blob:", "WARNING", "PT-WEB-CODE1"],
         ["http:", "ERROR", "PT-WEB-CODE1"],
@@ -147,7 +149,7 @@ class ContentSecurityPolicy(HeaderTestBase):
             for value in sorted(value_list):
                 is_vuln = False
                 for unsafe_string, bullet_type, json_vuln_code in self.UNSAFE_VALUES:  # Extract bullet type
-                    if unsafe_string == value:
+                    if unsafe_string.strip("'") == value:
                         ptprint(value, bullet_type, not self.args.json, indent=indent+4)
                         is_vuln = True
                         break
