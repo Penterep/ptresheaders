@@ -46,9 +46,9 @@ class StrictTransportSecurity(HeaderTestBase):
         self.attribs["preload"] = bool(preload_pattern.search(header_value))
 
         if not self.attribs["preload"]:
-            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-HSTSPL")
+            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-HSTSPL", header_contents=self.header_value)
         if not self.attribs["includeSubDomains"]:
-            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-HSTSSD")
+            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-HSTSSD", header_contents=self.header_value)
 
         self._print_result()
 
@@ -93,10 +93,10 @@ class StrictTransportSecurity(HeaderTestBase):
         """
 
         if value < 2592000:
-            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-HSTSINV")
+            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-HSTSINV", header_contents=self.header_value)
             return "VULN", "(too small value, recommended value least 31536000)"
         elif value < 31536000:
-            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-HSTSINV")
+            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-HSTSINV", header_contents=self.header_value)
             return "WARNING", "(recommended value least 31536000)"
         else:
             return "NOTVULN", ""

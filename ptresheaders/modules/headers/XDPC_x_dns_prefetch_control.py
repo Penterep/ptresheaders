@@ -8,4 +8,4 @@ class XDNSPrefetchControl(HeaderTestBase):
             ptprint(header_value, "OK", not self.args.json, indent=8)
         else:
             ptprint(f"{header_value}", "VULN", not self.args.json, indent=8)
-            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-XDPCINV")
+            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-XDPCINV", header_contents=self.header_value)

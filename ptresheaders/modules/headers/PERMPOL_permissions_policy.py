@@ -63,7 +63,7 @@ class PermissionsPolicy(HeaderTestBase):
 
         if not response_permissions:
             ptprint("Permissions-Policy header has invalid syntax", bullet_type="VULN", condition=not self.args.json, indent=4)
-            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-PERMPOLINV")
+            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-PERMPOLINV", header_contents=self.header_value)
             return
 
         missing_permissions: list = [p for p in self.standardized_permissions if p not in response_permissions]
@@ -84,7 +84,7 @@ class PermissionsPolicy(HeaderTestBase):
         
         for p in permissions:
             if "*" in p:
-                self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-PERMPOLINV")
+                self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-PERMPOLINV", header_contents=self.header_value)
             ptprint(p, bullet_type="VULN" if "*" in p else bullet, condition=not self.args.json, indent=8)
 
     def _parse_permissions(self, header_value: str) -> list:

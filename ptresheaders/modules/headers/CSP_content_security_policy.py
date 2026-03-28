@@ -78,7 +78,7 @@ class ContentSecurityPolicy(HeaderTestBase):
         missing_all_directives += self.get_others_directives(csp_dict)
 
         if missing_all_directives:
-            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-CSPINV")
+            self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-CSPINV", header_contents=self.header_value)
 
         if directive_type == "missing":
             ptprint("Missing directives:", "", not self.args.json, indent=4)
