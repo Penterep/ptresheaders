@@ -25,23 +25,20 @@ import re
 import urllib
 import inspect
 import importlib
-
+from collections import Counter
 from typing import Literal
 
 import requests
 from bs4 import BeautifulSoup
 
 from _version import __version__
-from ptlibs import ptjsonlib, ptprinthelper, ptmisclib, ptnethelper
-
-from ptlibs.ptprinthelper import ptprint, out_if
-
 from modules.cors import CrossOriginResourceSharing
 from modules.leaks import LeaksFinder
 
+from ptlibs import ptjsonlib, ptprinthelper, ptmisclib, ptnethelper
+from ptlibs.ptprinthelper import ptprint, out_if
 from ptcookiechecker.modules.cookie_tester import CookieTester
 
-from collections import Counter
 
 class PtResHeaders:
     """Script connects to target <url> and analyses response headers"""
@@ -58,6 +55,8 @@ class PtResHeaders:
 
         response, dump = self.load_url(args)
         headers: dict = response.headers
+        all_tests = set(list(dict.fromkeys(get_available_modules("prefix"))) + ["SC"])
+        run_off_header_tests = set(args.tests) == all_tests
 
         try:
             raw_headers: dict = response.raw.headers
@@ -69,18 +68,19 @@ class PtResHeaders:
         found_duplicit_headers: list = []
         warnings: list = []
 
-        # Print all response headers
-        self.print_response_headers(raw_headers)
-        self.print_meta_tags(response=response)
+        if run_off_header_tests:
+            # Print all response headers
+            self.print_response_headers(raw_headers)
+            self.print_meta_tags(response=response)
 
-        # Print info leaking headers
-        leaks_finder = LeaksFinder(args, self.ptjsonlib)
-        leaks_finder.find_technology_headers(headers)
-        leaks_finder.find_leaking_domains(headers)
-        leaks_finder.find_ipv4(headers)
+            # Print info leaking headers
+            leaks_finder = LeaksFinder(args, self.ptjsonlib)
+            leaks_finder.find_technology_headers(headers)
+            leaks_finder.find_leaking_domains(headers)
+            leaks_finder.find_ipv4(headers)
 
-        # Test CORS
-        CrossOriginResourceSharing().test(args=args, response_headers=headers)
+            # Test CORS
+            CrossOriginResourceSharing().test(args=args, response_headers=headers)
 
         # Create a set to track processed headers (for duplicites)
         processed_headers = set()
@@ -129,9 +129,10 @@ class PtResHeaders:
             CookieTester().run(response, args, self.ptjsonlib, test_cookie_issues=False)#, tests=["SAMESITE", "SECURE", "HTTPONLY"], test_cookie)
 
         self.report_warnings(warnings, args)
-        self.report_deprecated_headers(found_deprecated_headers, args)
         self.report_missing_headers(found_missing_headers, args)
-        self.report_duplicate_headers(raw_headers, args)
+        if run_off_header_tests:
+            self.report_deprecated_headers(found_deprecated_headers, args)
+            self.report_duplicate_headers(raw_headers, args)
 
         if not args.json and response.is_redirect:
             if self._yes_no_prompt("Returned response is an redirect, Scan again while following redirects? Y/n"):
