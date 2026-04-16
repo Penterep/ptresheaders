@@ -16,7 +16,7 @@ class CrossOriginResourceSharing:
         cross_origin_headers = self.get_cors_headers(response_headers)
 
         if cross_origin_headers:
-            ptprint("CORS Header:", bullet_type="TITLE", condition=not args.json, colortext=True, newline_above=True)
+            ptprint("CORS Header:", bullet_type="INFO", condition=not args.json, colortext=True, newline_above=True)
 
             for header_dict in cross_origin_headers:
                 header_name, value = next(iter(header_dict.items()))  # Unpack the single key-value pair
@@ -26,7 +26,7 @@ class CrossOriginResourceSharing:
 
     def _analyze_header(self, header_name: str, value: str):
         """Analyze the CORS header to determine if there are vulnerabilities or additional notes."""
-        bullet = ""
+        bullet = "TITLE"
         output_value = value
 
         if header_name.lower() == "access-control-allow-origin":
