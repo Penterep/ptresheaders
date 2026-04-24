@@ -85,6 +85,9 @@ class PtResHeaders:
         # Create a set to track processed headers (for duplicites)
         processed_headers = set()
 
+        found_meta_headers = {}
+        soup = None
+
         # Test observed headers for proper configuraton
         for observed_header, handler_function in self.OBSERVED_HEADERS_MODULES.items():
             #if handler_function == None: continue
@@ -102,6 +105,45 @@ class PtResHeaders:
 
             # Observed header does not exists in response headers
             else:
+                meta_tag_found = False
+                meta_tag_string = ""
+                meta_tag_value = ""
+
+                if observed_header.lower() in ["referrer-policy", "content-security-policy", "content-type"]:
+                    content_type = response.headers.get("Content-Type", "").lower()
+                    if ("text/html" in content_type or not content_type) and soup is None:
+                        soup = BeautifulSoup(response.text, "lxml")
+
+                    if soup:
+                        if observed_header.lower() == "referrer-policy":
+                            tag = soup.find("meta", attrs={"name": lambda x: x and x.lower() == "referrer"})
+                            if tag and tag.get("content"):
+                                meta_tag_found = True
+                                meta_tag_string = str(tag)
+                                meta_tag_value = tag.get("content")
+                        elif observed_header.lower() == "content-security-policy":
+                            tag = soup.find("meta", attrs={"http-equiv": lambda x: x and x.lower() == "content-security-policy"})
+                            if tag and tag.get("content"):
+                                meta_tag_found = True
+                                meta_tag_string = str(tag)
+                                meta_tag_value = tag.get("content")
+                        elif observed_header.lower() == "content-type":
+                            tag = soup.find("meta", attrs={"http-equiv": lambda x: x and x.lower() == "content-type"})
+                            if tag and tag.get("content"):
+                                meta_tag_found = True
+                                meta_tag_string = str(tag)
+                                meta_tag_value = tag.get("content")
+                            else:
+                                tag = soup.find("meta", charset=True)
+                                if tag:
+                                    meta_tag_found = True
+                                    meta_tag_string = str(tag)
+                                    meta_tag_value = f"text/html; charset={tag.get('charset')}"
+                
+                if meta_tag_found:
+                    found_meta_headers[observed_header] = (meta_tag_string, meta_tag_value, handler_function)
+                    continue
+
                 if observed_header.lower() == "X-Robots-Tag".lower():
                     warnings.append(observed_header)
                     continue
@@ -130,6 +172,7 @@ class PtResHeaders:
 
         self.report_warnings(warnings, args)
         self.report_missing_headers(found_missing_headers, args)
+        self.report_meta_tag_headers(found_meta_headers, args, response)
         if run_off_header_tests:
             self.report_deprecated_headers(found_deprecated_headers, args)
             self.report_duplicate_headers(raw_headers, args)
@@ -163,7 +206,7 @@ class PtResHeaders:
             return (response, dump)
         except Exception as e:
             ptprint(f"Connecting to URL: {args.url}", "TITLE", not args.json, colortext=True, end=" ")
-            ptprint(f"[err]", "TEXT", not args.json)
+            ptprint(f"[err] {e}", "TEXT", not args.json)
             self.ptjsonlib.end_error(f"Error retrieving response from server.", args.json)
 
     def report_warnings(self, warnings, args):
@@ -188,7 +231,16 @@ class PtResHeaders:
 
                 self.ptjsonlib.add_vulnerability(f"PTV-WEB-HTTP-{self.PREFIX_MAP[header]}MIS", header_contents=header)
             ptprint(" ", condition=not args.json)
-            
+
+    def report_meta_tag_headers(self, found_meta_headers, args, response):
+        if found_meta_headers:
+            ptprint("Headers implemented by meta tag:", "INFO", condition=not args.json, colortext=True, newline_above=True)
+            for header_name, (tag_str, tag_val, handler_function) in found_meta_headers.items():
+                ptprint(f"{header_name}", "TEXT", condition=not args.json, indent=8)
+                ptprint(f"{tag_str}", "TEXT", condition=not args.json, indent=8)
+                handler_function(self.ptjsonlib, args, header_name, tag_val, response, False, is_meta_tag=True).test_header(header_value=tag_val)
+            ptprint(" ", condition=not args.json)
+
 
     def report_duplicate_headers(self, raw_headers, args):
         duplicit_headers: set = set()

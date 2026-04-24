@@ -8,7 +8,7 @@ class HeaderTestBase:
     should inherit from this base class and implement the `test_header` method.
     """
 
-    def __init__(self, ptjsonlib, args, header_name, header_value, response, is_duplicate):
+    def __init__(self, ptjsonlib, args, header_name, header_value, response, is_duplicate, is_meta_tag=False):
         """
         Initialize the base class for header tests.
 
@@ -26,10 +26,12 @@ class HeaderTestBase:
         self.header_name = header_name
         self.header_value = header_value
         self.response = response
-        ptprint(f"{header_name}:", "INFO", not self.args.json, colortext=True, newline_above=True)
-        if is_duplicate:
-            ptprint(get_colored_text("Duplicate header", "WARNING"), "TEXT", condition=not self.args.json, indent=4)
-        ptprint(f"{self.header_name}: {self.header_value}", "ADDITIONS", not self.args.json, colortext=True, indent=4)
+        
+        if not is_meta_tag:
+            ptprint(f"{header_name}:", "INFO", not self.args.json, colortext=True, newline_above=True)
+            if is_duplicate:
+                ptprint(get_colored_text("Duplicate header", "WARNING"), "TEXT", condition=not self.args.json, indent=4)
+            ptprint(f"{self.header_name}: {self.header_value}", "ADDITIONS", not self.args.json, colortext=True, indent=4)
 
 
     def test_header(self):
