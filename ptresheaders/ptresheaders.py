@@ -236,8 +236,8 @@ class PtResHeaders:
         if found_meta_headers:
             ptprint("Headers implemented by meta tag:", "INFO", condition=not args.json, colortext=True, newline_above=True)
             for header_name, (tag_str, tag_val, handler_function) in found_meta_headers.items():
-                ptprint(f"{header_name}", "TEXT", condition=not args.json, indent=8)
-                ptprint(f"{tag_str}", "TEXT", condition=not args.json, indent=8)
+                ptprint(f"{header_name}", "TEXT", condition=not args.json, indent=4)
+                ptprint(f"{tag_str}", "ADDITIONS", condition=not args.json, colortext=True, indent=8)
                 handler_function(self.ptjsonlib, args, header_name, tag_val, response, False, is_meta_tag=True).test_header(header_value=tag_val)
             ptprint(" ", condition=not args.json)
 

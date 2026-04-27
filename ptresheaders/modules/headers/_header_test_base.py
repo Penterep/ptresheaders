@@ -26,6 +26,7 @@ class HeaderTestBase:
         self.header_name = header_name
         self.header_value = header_value
         self.response = response
+        self.output_indent = 4 if is_meta_tag else 0
         
         if not is_meta_tag:
             ptprint(f"{header_name}:", "INFO", not self.args.json, colortext=True, newline_above=True)
@@ -36,3 +37,6 @@ class HeaderTestBase:
 
     def test_header(self):
         raise NotImplementedError("Not implemented")
+
+    def _indent(self, indent: int) -> int:
+        return self.output_indent + indent

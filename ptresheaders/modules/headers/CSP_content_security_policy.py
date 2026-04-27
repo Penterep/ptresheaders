@@ -81,23 +81,23 @@ class ContentSecurityPolicy(HeaderTestBase):
             self.ptjsonlib.add_vulnerability("PTV-WEB-HTTP-CSPINV", header_contents=self.header_value)
 
         if directive_type == "missing":
-            ptprint("Missing directives:", "", not self.args.json, indent=4)
+            ptprint("Missing directives:", "", not self.args.json, indent=self._indent(4))
             for key in missing_all_directives:
                 #self.ptjsonlib.add_vulnerability(f"MISSING-DIRECTIVE-{key}")
-                ptprint(key, "VULN", not self.args.json, indent=8)
+                ptprint(key, "VULN", not self.args.json, indent=self._indent(8))
 
         if directive_type == "default-src":
             if not "default-src" in csp_dict:
                 return
-            ptprint(f"Policy definition:", "", condition=not self.args.json and (not self.printed_policy_definition), newline_above=True, indent=4)
-            ptprint('default-src', "", not self.args.json, indent=8)
+            ptprint(f"Policy definition:", "", condition=not self.args.json and (not self.printed_policy_definition), newline_above=True, indent=self._indent(4))
+            ptprint('default-src', "", not self.args.json, indent=self._indent(8))
             for key in missing_fetch_directives:
-                ptprint(key, "", not self.args.json, indent=12)
+                ptprint(key, "", not self.args.json, indent=self._indent(12))
             self._print_values("", csp_dict.get("default-src", []))
             self.printed_policy_definition = True
 
         if directive_type == "fetch":
-            ptprint(f"Policy definition:", "", condition=not self.args.json and (not self.printed_policy_definition), newline_above=True, indent=4)
+            ptprint(f"Policy definition:", "", condition=not self.args.json and (not self.printed_policy_definition), newline_above=True, indent=self._indent(4))
             for key, value_list in csp_dict.items():
                 if key in self._get_all_exists_fetch_directives():
                     if key == "default-src":
@@ -106,7 +106,7 @@ class ContentSecurityPolicy(HeaderTestBase):
             self.printed_policy_definition = True
 
         if directive_type == "other":
-            ptprint(f"Policy definition:", "", condition=not self.args.json and (not self.printed_policy_definition), newline_above=True, indent=4)
+            ptprint(f"Policy definition:", "", condition=not self.args.json and (not self.printed_policy_definition), newline_above=True, indent=self._indent(4))
             for key, value_list in csp_dict.items():
                 if key in self._get_all_exists_other_directives():
                     self._print_values(key, value_list)
@@ -119,26 +119,27 @@ class ContentSecurityPolicy(HeaderTestBase):
                     csp_dict.pop(key)
 
             if csp_dict.keys():
-                ptprint("Non-standard directives:", "", not self.args.json, newline_above=True, indent=4)
+                ptprint("Non-standard directives:", "", not self.args.json, newline_above=True, indent=self._indent(4))
                 for key, value_list in csp_dict.items():
                     self._print_values(key, value_list)
 
         if directive_type == "policy-uri":
             if "policy-uri" in csp_dict.keys():
-                ptprint("Policy-Uri:", "", not self.args.json, newline_above=True, indent=4)
+                ptprint("Policy-Uri:", "", not self.args.json, newline_above=True, indent=self._indent(4))
                 # TODO: Add-Vulnerability
                 for value in csp_dict["policy-uri"]:
-                    ptprint(value, "", not self.args.json, indent=8)
-                ptprint("Deprecated directive", "WARNING", not self.args.json, indent=8)
+                    ptprint(value, "", not self.args.json, indent=self._indent(8))
+                ptprint("Deprecated directive", "WARNING", not self.args.json, indent=self._indent(8))
 
     def _print_values(self, key, value_list, indent=8):
         """Helper method to print sorted values with vulnerability checks."""
 
+        indent = self._indent(indent)
         value_list = [value.strip("'") for value in value_list]
         if not any(value_list):
 
             if key in ["upgrade-insecure-requests"]:
-                ptprint(key, "TEXT", not self.args.json, indent=8)
+                ptprint(key, "TEXT", not self.args.json, indent=indent)
                 ptprint("directive is present", "OK", not self.args.json and key, newline_above=False, indent=indent+4)
             else:
                 ptprint(key, "WARNING", not self.args.json and key, newline_above=False, indent=indent)

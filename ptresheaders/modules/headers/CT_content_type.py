@@ -7,14 +7,14 @@ class ContentType(HeaderTestBase):
     def test_header(self, header_value: str):
         header_values_list: list = header_value.split(", ")
         mime_type = self.get_mime_type(header_value)
-        ptprint("Values:", "TEXT", not self.args.json, indent=4)
-        ptprint(mime_type, bullet_type="OK" if self.is_valid_mime_type else "VULN", condition=not self.args.json, indent=8)
+        ptprint("Values:", "TEXT", not self.args.json, indent=self._indent(4))
+        ptprint(mime_type, bullet_type="OK" if self.is_valid_mime_type else "VULN", condition=not self.args.json, indent=self._indent(8))
 
         charset = self.get_charset(header_value)
         if charset:
-            ptprint(charset, bullet_type="OK", condition=not self.args.json, indent=8)
+            ptprint(charset, bullet_type="OK", condition=not self.args.json, indent=self._indent(8))
         else:
-            ptprint("Missing charset", bullet_type="VULN", condition=not self.args.json, indent=8)
+            ptprint("Missing charset", bullet_type="VULN", condition=not self.args.json, indent=self._indent(8))
 
     def is_valid_mime_type(self, mime_type) -> bool:
         return True if len(mime_type.split("/")) == 2 else False
