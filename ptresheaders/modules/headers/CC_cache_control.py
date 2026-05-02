@@ -10,6 +10,7 @@ class CacheControl(HeaderTestBase):
 
         content_type = self.response.headers.get("Content-Type", "").lower()
         is_sensitive = any(ct in content_type for ct in ["text/html", "json", "xml"])
+        has_max_age_zero = any(self._is_max_age_zero(directive) for directive in lower_directives)
 
         required_directives  = ["no-cache", "no-store", "must-revalidate"]
         dangerous_directives = ["public", "immutable"]
@@ -35,8 +36,19 @@ class CacheControl(HeaderTestBase):
         if is_sensitive:
             for req in required_directives:
                 if req not in lower_directives:
-                    ptprint(f"Missing: {req}", bullet_type="VULN", condition=not self.args.json, indent=8)
-                    has_vuln = True
+                    if req == "must-revalidate" and has_max_age_zero:
+                        ptprint(
+                            f"{req} not set; max-age=0 present",
+                            bullet_type="WARNING",
+                            condition=not self.args.json,
+                            indent=8
+                        )
+                    else:
+                        ptprint(f"Missing: {req}", bullet_type="VULN", condition=not self.args.json, indent=8)
+                        has_vuln = True
 
             if has_vuln:
                 self.ptjsonlib.add_vulnerability("PTV-WEB-CACHE-CLSENS", header_contents=header_value)
+
+    def _is_max_age_zero(self, directive: str) -> bool:
+        return bool(re.match(r'^max-age\s*=\s*0$', directive))

@@ -205,8 +205,8 @@ class PtResHeaders:
             ptprint(f"[{response.status_code}]", "TEXT", not args.json, end="\n")
             return (response, dump)
         except Exception as e:
-            ptprint(f"Connecting to URL: {args.url}", "TITLE", not args.json, colortext=True, end=" ")
-            ptprint(f"[err] {e}", "TEXT", not args.json)
+            ptprint(f"Connecting to URL: {args.url}", "TITLE", not args.json, colortext=True)
+            ptprint(str(e), "ERROR", not args.json)
             self.ptjsonlib.end_error(f"Error retrieving response from server.", args.json)
 
     def report_warnings(self, warnings, args):
